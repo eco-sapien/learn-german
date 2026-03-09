@@ -1,173 +1,480 @@
-// Vocabulary data organized by category
-const vocabulary = {
-    basics: [
-        { de: "Hallo", en: "Hello", example: "Hallo, wie geht es dir?" },
-        { de: "Tschüss", en: "Goodbye", example: "Tschüss, bis morgen!" },
-        { de: "Bitte", en: "Please / You're welcome", example: "Ein Wasser, bitte." },
-        { de: "Danke", en: "Thank you", example: "Danke schön!" },
-        { de: "Ja", en: "Yes", example: "Ja, das stimmt." },
-        { de: "Nein", en: "No", example: "Nein, danke." },
-        { de: "Guten Morgen", en: "Good morning", example: "Guten Morgen! Wie geht's?" },
-        { de: "Guten Abend", en: "Good evening", example: "Guten Abend, meine Damen und Herren." },
-        { de: "Entschuldigung", en: "Excuse me / Sorry", example: "Entschuldigung, wo ist der Bahnhof?" },
-        { de: "Ich verstehe nicht", en: "I don't understand", example: "Ich verstehe nicht, können Sie das wiederholen?" },
-    ],
-    food: [
-        { de: "das Brot", en: "bread", example: "Ich möchte ein Brot kaufen." },
-        { de: "das Wasser", en: "water", example: "Ein Glas Wasser, bitte." },
-        { de: "der Kaffee", en: "coffee", example: "Ich trinke jeden Morgen Kaffee." },
-        { de: "die Milch", en: "milk", example: "Die Milch ist im Kühlschrank." },
-        { de: "der Apfel", en: "apple", example: "Der Apfel ist rot." },
-        { de: "das Ei", en: "egg", example: "Ich möchte zwei Eier zum Frühstück." },
-        { de: "das Fleisch", en: "meat", example: "Ich esse kein Fleisch." },
-        { de: "der Reis", en: "rice", example: "Reis mit Gemüse, bitte." },
-        { de: "die Kartoffel", en: "potato", example: "Kartoffeln sind sehr beliebt in Deutschland." },
-        { de: "der Kuchen", en: "cake", example: "Der Kuchen schmeckt sehr gut." },
-    ],
-    travel: [
-        { de: "der Bahnhof", en: "train station", example: "Wo ist der Bahnhof?" },
-        { de: "der Flughafen", en: "airport", example: "Wir fahren zum Flughafen." },
-        { de: "die Straße", en: "street", example: "Die Straße ist sehr lang." },
-        { de: "das Hotel", en: "hotel", example: "Das Hotel ist in der Nähe." },
-        { de: "die Fahrkarte", en: "ticket", example: "Eine Fahrkarte nach Berlin, bitte." },
-        { de: "der Zug", en: "train", example: "Der Zug kommt um 10 Uhr." },
-        { de: "links", en: "left", example: "Gehen Sie nach links." },
-        { de: "rechts", en: "right", example: "Das Restaurant ist rechts." },
-        { de: "geradeaus", en: "straight ahead", example: "Gehen Sie geradeaus." },
-        { de: "die Haltestelle", en: "bus stop", example: "Die Haltestelle ist dort drüben." },
-    ],
-    numbers: [
-        { de: "eins", en: "one (1)", example: "Ich habe eins." },
-        { de: "zwei", en: "two (2)", example: "Zwei Kaffee, bitte." },
-        { de: "drei", en: "three (3)", example: "Ich habe drei Geschwister." },
-        { de: "vier", en: "four (4)", example: "Es ist vier Uhr." },
-        { de: "fünf", en: "five (5)", example: "Fünf Minuten noch." },
-        { de: "zehn", en: "ten (10)", example: "Das kostet zehn Euro." },
-        { de: "zwanzig", en: "twenty (20)", example: "Ich bin zwanzig Jahre alt." },
-        { de: "fünfzig", en: "fifty (50)", example: "Es sind fünfzig Kilometer." },
-        { de: "hundert", en: "hundred (100)", example: "Hundert Prozent!" },
-        { de: "tausend", en: "thousand (1000)", example: "Es kostet tausend Euro." },
-    ]
-};
+/**
+ * Learn German - Main Application Logic
+ * Level-based flashcard system with spaced repetition
+ */
 
-// App state
-let currentCategory = 'basics';
-let currentIndex = 0;
-let isRevealed = false;
-let cardsCompleted = 0;
+(function () {
+  'use strict';
 
-// DOM elements
-const flashcardWord = document.getElementById('flashcard-word');
-const flashcardAnswer = document.getElementById('flashcard-answer');
-const flashcardExample = document.getElementById('flashcard-example');
-const flashcardHint = document.getElementById('flashcard-hint');
-const progressFill = document.getElementById('progress-fill');
-const progressText = document.getElementById('progress-text');
-const flashcard = document.getElementById('flashcard');
-const revealBtn = document.getElementById('reveal-btn');
-const nextBtn = document.getElementById('next-btn');
+  let progress;
+  let currentMode = 'map'; // map | study | quiz | results
+  let studyDeck = [];
+  let studyIndex = 0;
+  let quizQuestions = [];
+  let quizIndex = 0;
+  let quizScore = 0;
+  let quizAnswers = [];
+  let activeLevelId = null;
+  let cardFlipped = false;
 
-// Initialize
-function init() {
-    loadCard();
-    updateProgress();
-    setupCategoryListeners();
-}
+  // --- Initialization ---
 
-// Load current card
-function loadCard() {
-    const cards = vocabulary[currentCategory];
-    const card = cards[currentIndex];
+  function init() {
+    progress = loadProgress();
+    renderNavProgress();
+    navigateTo('map');
+    setupKeyboard();
+  }
 
-    flashcardWord.textContent = card.de;
-    flashcardAnswer.textContent = card.en;
-    flashcardExample.textContent = `"${card.example}"`;
-    flashcardHint.textContent = 'Click or press Space to reveal';
+  // --- Navigation ---
 
-    flashcardAnswer.classList.remove('visible');
-    flashcardExample.classList.remove('visible');
-    isRevealed = false;
+  function navigateTo(mode, levelId) {
+    currentMode = mode;
+    if (levelId !== undefined) activeLevelId = levelId;
 
-    revealBtn.style.display = '';
-    nextBtn.style.display = 'none';
-}
+    const app = document.getElementById('app');
+    app.innerHTML = '';
 
-// Reveal answer
-function revealAnswer() {
-    if (isRevealed) return;
-
-    flashcardAnswer.classList.add('visible');
-    flashcardExample.classList.add('visible');
-    flashcardHint.textContent = '';
-    isRevealed = true;
-
-    revealBtn.style.display = 'none';
-    nextBtn.style.display = '';
-}
-
-// Next card
-function nextCard() {
-    const cards = vocabulary[currentCategory];
-    cardsCompleted++;
-    currentIndex = (currentIndex + 1) % cards.length;
-    loadCard();
-    updateProgress();
-}
-
-// Update progress
-function updateProgress() {
-    const cards = vocabulary[currentCategory];
-    const progress = ((currentIndex) / cards.length) * 100;
-    progressFill.style.width = progress + '%';
-    progressText.textContent = `${currentIndex} / ${cards.length} cards`;
-}
-
-// Category switching
-function setupCategoryListeners() {
-    document.querySelectorAll('.feature-card').forEach(card => {
-        card.addEventListener('click', function () {
-            const category = this.dataset.category;
-            if (!category || category === currentCategory) return;
-
-            document.querySelectorAll('.feature-card').forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-
-            currentCategory = category;
-            currentIndex = 0;
-            loadCard();
-            updateProgress();
-
-            document.getElementById('practice-area').scrollIntoView({ behavior: 'smooth' });
-        });
-    });
-}
-
-// Event listeners
-flashcard.addEventListener('click', revealAnswer);
-revealBtn.addEventListener('click', revealAnswer);
-nextBtn.addEventListener('click', nextCard);
-
-// Keyboard support
-document.addEventListener('keydown', function (e) {
-    if (e.code === 'Space' && !isRevealed) {
-        e.preventDefault();
-        revealAnswer();
-    } else if ((e.code === 'ArrowRight' || e.code === 'Enter') && isRevealed) {
-        e.preventDefault();
-        nextCard();
+    switch (mode) {
+      case 'map': renderLevelMap(app); break;
+      case 'study': startStudySession(app, activeLevelId); break;
+      case 'quiz': startQuiz(app, activeLevelId); break;
+      case 'results': renderResults(app); break;
     }
-});
 
-// Smooth scrolling for nav links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderNavProgress();
+    window.scrollTo(0, 0);
+  }
+
+  // --- Nav Progress ---
+
+  function renderNavProgress() {
+    const el = document.getElementById('nav-progress');
+    const completed = progress.completedLevels.length;
+    const total = LEVELS.length;
+    const pct = Math.round((completed / total) * 100);
+    el.innerHTML = `
+      <span class="nav-level-text">Level ${progress.currentLevel}/${total}</span>
+      <div class="nav-progress-bar">
+        <div class="nav-progress-fill" style="width: ${pct}%"></div>
+      </div>
+    `;
+  }
+
+  // --- Level Map ---
+
+  function renderLevelMap(container) {
+    const section = document.createElement('section');
+    section.id = 'level-map';
+    section.setAttribute('aria-label', 'Level progression map');
+
+    let html = '<h1 class="map-title">Your path to German A0</h1>';
+    html += '<div class="level-list">';
+
+    for (const level of LEVELS) {
+      const isCompleted = progress.completedLevels.includes(level.id);
+      const isCurrent = level.id === progress.currentLevel && !isCompleted;
+      const isLocked = level.id > progress.currentLevel;
+      const stateClass = isCompleted ? 'level-completed' : isCurrent ? 'level-current' : 'level-locked';
+      const clickable = !isLocked;
+      const wordCount = level.words.length;
+      const config = LEVEL_CONFIG.find(c => c.id === level.id);
+      const reviewCount = config.reviewCount;
+      const sessionSize = wordCount + reviewCount;
+
+      const quiz = progress.quizHistory[level.id];
+      const scoreText = quiz ? `Best: ${quiz.score}/${quiz.total}` : '';
+
+      html += `
+        <div class="level-card ${stateClass}" ${clickable ? `tabindex="0" role="button" aria-label="Start level ${level.id}: ${level.title}" data-level="${level.id}"` : `aria-label="Level ${level.id}: ${level.title} (locked)"`}>
+          <div class="level-icon">${isLocked ? '\u{1F512}' : isCompleted ? '\u2705' : level.icon}</div>
+          <div class="level-info">
+            <div class="level-header">
+              <span class="level-number">Level ${level.id}</span>
+              ${isCompleted ? '<span class="level-badge badge-complete">Complete</span>' : ''}
+              ${isCurrent ? '<span class="level-badge badge-current">Current</span>' : ''}
+            </div>
+            <div class="level-title">${level.title}</div>
+            <div class="level-desc">${level.description}</div>
+            <div class="level-meta">
+              ${wordCount} new words${reviewCount > 0 ? ` + ${reviewCount} review` : ''} &middot; ${sessionSize} cards
+              ${scoreText ? ` &middot; ${scoreText}` : ''}
+            </div>
+          </div>
+          <div class="level-arrow">${isLocked ? '' : '\u2192'}</div>
+        </div>
+      `;
+    }
+
+    html += '</div>';
+    html += `
+      <div class="map-footer">
+        <button class="btn-reset" id="btn-reset-progress">Reset Progress</button>
+      </div>
+    `;
+
+    section.innerHTML = html;
+    container.appendChild(section);
+
+    section.querySelectorAll('.level-card[data-level]').forEach(card => {
+      const handler = () => {
+        navigateTo('study', parseInt(card.dataset.level));
+      };
+      card.addEventListener('click', handler);
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handler();
         }
+      });
     });
-});
 
-// Start the app
-init();
+    document.getElementById('btn-reset-progress').addEventListener('click', () => {
+      if (confirm('Reset all progress? This cannot be undone.')) {
+        progress = resetProgress();
+        navigateTo('map');
+      }
+    });
+  }
+
+  // --- Study Session ---
+
+  function startStudySession(container, levelId) {
+    const level = LEVELS.find(l => l.id === levelId);
+    if (!level) return navigateTo('map');
+
+    const config = LEVEL_CONFIG.find(c => c.id === levelId);
+    const reviewWords = getReviewWords(progress, levelId, config.reviewCount);
+
+    studyDeck = [
+      ...level.words.map(w => ({ ...w, isReview: false })),
+      ...reviewWords.map(w => ({ de: w.de, en: w.en, example: w.example, isReview: true }))
+    ];
+    shuffle(studyDeck);
+    studyIndex = 0;
+    cardFlipped = false;
+
+    renderStudyCard(container, level);
+  }
+
+  function renderStudyCard(container, level) {
+    if (studyIndex >= studyDeck.length) {
+      renderStudyComplete(container, level);
+      return;
+    }
+
+    const card = studyDeck[studyIndex];
+    const total = studyDeck.length;
+    const num = studyIndex + 1;
+
+    const section = document.createElement('section');
+    section.id = 'study-view';
+    section.setAttribute('aria-label', 'Study session');
+
+    section.innerHTML = `
+      <div class="study-header">
+        <button class="btn-back" id="btn-back-map" aria-label="Back to level map">&larr; Back</button>
+        <div class="study-progress-text">${num} / ${total}</div>
+      </div>
+      <div class="study-progress-bar">
+        <div class="study-progress-fill" style="width: ${(num / total) * 100}%"></div>
+      </div>
+      <div class="flashcard ${cardFlipped ? 'flipped' : ''}" id="flashcard" tabindex="0" role="button" aria-label="Flashcard. Press space to flip.">
+        ${card.isReview ? '<span class="review-tag">Review</span>' : '<span class="new-tag">New</span>'}
+        <div class="flashcard-front">
+          <div class="flashcard-word">${card.de}</div>
+          <div class="flashcard-hint">Tap or press Space to reveal</div>
+        </div>
+        <div class="flashcard-back">
+          <div class="flashcard-word">${card.de}</div>
+          <div class="flashcard-divider"></div>
+          <div class="flashcard-translation">${card.en}</div>
+          <div class="flashcard-example">${card.example}</div>
+        </div>
+      </div>
+      <div class="study-actions ${cardFlipped ? 'visible' : ''}" id="study-actions" aria-live="polite">
+        <button class="btn-learning" id="btn-learning">Still learning</button>
+        <button class="btn-gotit" id="btn-gotit">Got it!</button>
+      </div>
+    `;
+
+    container.innerHTML = '';
+    container.appendChild(section);
+
+    document.getElementById('flashcard').addEventListener('click', flipCard);
+    document.getElementById('btn-back-map').addEventListener('click', () => navigateTo('map'));
+    document.getElementById('btn-gotit').addEventListener('click', () => assessCard(true, container, level));
+    document.getElementById('btn-learning').addEventListener('click', () => assessCard(false, container, level));
+  }
+
+  function flipCard() {
+    if (cardFlipped) return;
+    cardFlipped = true;
+    document.getElementById('flashcard').classList.add('flipped');
+    document.getElementById('study-actions').classList.add('visible');
+  }
+
+  function assessCard(correct, container, level) {
+    const card = studyDeck[studyIndex];
+    updateWordStat(progress, card.de, correct);
+    studyIndex++;
+    cardFlipped = false;
+    renderStudyCard(container, level);
+  }
+
+  function renderStudyComplete(container, level) {
+    container.innerHTML = `
+      <section id="study-complete" aria-label="Study session complete">
+        <div class="complete-card">
+          <div class="complete-icon">\u{1F389}</div>
+          <h2>Session Complete!</h2>
+          <p>You've reviewed all ${studyDeck.length} cards for <strong>${level.title}</strong>.</p>
+          <p class="complete-sub">Ready to test your knowledge?</p>
+          <div class="complete-actions">
+            <button class="btn-primary" id="btn-start-quiz">Start Quiz</button>
+            <button class="btn-secondary" id="btn-study-again">Study Again</button>
+          </div>
+        </div>
+      </section>
+    `;
+
+    document.getElementById('btn-start-quiz').addEventListener('click', () => navigateTo('quiz', level.id));
+    document.getElementById('btn-study-again').addEventListener('click', () => navigateTo('study', level.id));
+  }
+
+  // --- Quiz Mode ---
+
+  function startQuiz(container, levelId) {
+    const level = LEVELS.find(l => l.id === levelId);
+    if (!level) return navigateTo('map');
+
+    quizQuestions = level.words.map(word => {
+      const options = generateOptions(word, levelId);
+      return { word, options };
+    });
+    shuffle(quizQuestions);
+    quizIndex = 0;
+    quizScore = 0;
+    quizAnswers = [];
+
+    renderQuizQuestion(container, level);
+  }
+
+  function generateOptions(correctWord, levelId) {
+    const allWords = [];
+    for (const level of LEVELS) {
+      if (level.id > levelId) break;
+      for (const w of level.words) {
+        if (w.en !== correctWord.en) {
+          allWords.push(w.en);
+        }
+      }
+    }
+    shuffle(allWords);
+    const distractors = allWords.slice(0, 3);
+    const options = [correctWord.en, ...distractors];
+    shuffle(options);
+    return options;
+  }
+
+  function renderQuizQuestion(container, level) {
+    if (quizIndex >= quizQuestions.length) {
+      const passed = quizScore >= Math.ceil(quizQuestions.length * 0.8);
+      if (passed) {
+        completeLevel(progress, level.id, quizScore, quizQuestions.length);
+      }
+      navigateTo('results');
+      return;
+    }
+
+    const q = quizQuestions[quizIndex];
+    const num = quizIndex + 1;
+    const total = quizQuestions.length;
+
+    const section = document.createElement('section');
+    section.id = 'quiz-view';
+    section.setAttribute('aria-label', 'Quiz');
+
+    section.innerHTML = `
+      <div class="quiz-header">
+        <button class="btn-back" id="btn-back-study" aria-label="Back to study">&larr; Back</button>
+        <div class="quiz-progress-text">${num} / ${total}</div>
+        <div class="quiz-score-text">Score: ${quizScore}</div>
+      </div>
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill" style="width: ${(num / total) * 100}%"></div>
+      </div>
+      <div class="quiz-question">
+        <div class="quiz-prompt">What does this mean?</div>
+        <div class="quiz-word">${q.word.de}</div>
+      </div>
+      <div class="quiz-options" role="radiogroup" aria-label="Answer options">
+        ${q.options.map((opt, i) => `
+          <button class="quiz-option" data-index="${i}" tabindex="0" role="radio" aria-checked="false">
+            <span class="option-number">${i + 1}</span>
+            <span class="option-text">${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="quiz-feedback" id="quiz-feedback" aria-live="assertive"></div>
+    `;
+
+    container.innerHTML = '';
+    container.appendChild(section);
+
+    document.getElementById('btn-back-study').addEventListener('click', () => navigateTo('study', level.id));
+
+    section.querySelectorAll('.quiz-option').forEach(btn => {
+      btn.addEventListener('click', () => handleQuizAnswer(btn, q, level, container));
+    });
+  }
+
+  function handleQuizAnswer(btn, question, level, container) {
+    if (container.querySelector('.quiz-option.selected')) return;
+
+    const chosen = btn.querySelector('.option-text').textContent;
+    const correct = question.word.en;
+    const isCorrect = chosen === correct;
+
+    btn.classList.add('selected');
+
+    if (isCorrect) {
+      btn.classList.add('correct');
+      quizScore++;
+    } else {
+      btn.classList.add('wrong');
+      container.querySelectorAll('.quiz-option').forEach(opt => {
+        if (opt.querySelector('.option-text').textContent === correct) {
+          opt.classList.add('correct');
+        }
+      });
+    }
+
+    quizAnswers.push({ word: question.word, chosen, correct, isCorrect });
+    updateWordStat(progress, question.word.de, isCorrect);
+
+    const feedback = document.getElementById('quiz-feedback');
+    feedback.innerHTML = isCorrect
+      ? '<span class="feedback-correct">Correct!</span>'
+      : `<span class="feedback-wrong">Wrong \u2014 the answer is "${correct}"</span>`;
+    feedback.classList.add('visible');
+
+    setTimeout(() => {
+      quizIndex++;
+      renderQuizQuestion(container, level);
+    }, 1200);
+  }
+
+  // --- Results Screen ---
+
+  function renderResults(container) {
+    const total = quizQuestions.length;
+    const passed = quizScore >= Math.ceil(total * 0.8);
+    const pct = Math.round((quizScore / total) * 100);
+    const level = LEVELS.find(l => l.id === activeLevelId);
+    const wrongAnswers = quizAnswers.filter(a => !a.isCorrect);
+
+    const section = document.createElement('section');
+    section.id = 'results-view';
+    section.setAttribute('aria-label', 'Quiz results');
+
+    let wrongHtml = '';
+    if (wrongAnswers.length > 0) {
+      wrongHtml = `
+        <div class="wrong-list">
+          <h3>Words to review:</h3>
+          ${wrongAnswers.map(a => `
+            <div class="wrong-item">
+              <span class="wrong-de">${a.word.de}</span>
+              <span class="wrong-arrow">&rarr;</span>
+              <span class="wrong-en">${a.correct}</span>
+              <span class="wrong-chose">(you chose: ${a.chosen})</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    section.innerHTML = `
+      <div class="results-card">
+        <div class="results-icon">${passed ? '\u{1F31F}' : '\u{1F4AA}'}</div>
+        <h2>${passed ? 'Level Complete!' : 'Keep Practicing!'}</h2>
+        <div class="results-score">
+          <div class="score-big">${quizScore}/${total}</div>
+          <div class="score-pct">${pct}%</div>
+        </div>
+        <div class="results-threshold">${passed ? 'You passed! (80% required)' : `You need 80% to pass (${Math.ceil(total * 0.8)}/${total})`}</div>
+        ${wrongHtml}
+        <div class="results-actions">
+          ${passed && activeLevelId < LEVELS.length
+            ? '<button class="btn-primary" id="btn-next-level">Next Level</button>'
+            : ''}
+          ${!passed
+            ? '<button class="btn-primary" id="btn-retry-study">Study Again</button>'
+            : ''}
+          <button class="btn-secondary" id="btn-back-to-map">Back to Levels</button>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = '';
+    container.appendChild(section);
+
+    if (passed && activeLevelId < LEVELS.length) {
+      document.getElementById('btn-next-level').addEventListener('click', () => {
+        navigateTo('study', activeLevelId + 1);
+      });
+    }
+    if (!passed) {
+      document.getElementById('btn-retry-study').addEventListener('click', () => {
+        navigateTo('study', activeLevelId);
+      });
+    }
+    document.getElementById('btn-back-to-map').addEventListener('click', () => navigateTo('map'));
+  }
+
+  // --- Keyboard Support ---
+
+  function setupKeyboard() {
+    document.addEventListener('keydown', e => {
+      if (currentMode === 'study') {
+        if (e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          if (!cardFlipped) flipCard();
+        }
+        if (cardFlipped) {
+          if (e.key === 'ArrowRight' || e.key === '2') {
+            e.preventDefault();
+            document.getElementById('btn-gotit')?.click();
+          }
+          if (e.key === 'ArrowLeft' || e.key === '1') {
+            e.preventDefault();
+            document.getElementById('btn-learning')?.click();
+          }
+        }
+      }
+
+      if (currentMode === 'quiz') {
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= 4) {
+          e.preventDefault();
+          document.querySelector(`.quiz-option[data-index="${num - 1}"]`)?.click();
+        }
+      }
+    });
+  }
+
+  // --- Utilities ---
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // --- Boot ---
+
+  document.addEventListener('DOMContentLoaded', init);
+})();

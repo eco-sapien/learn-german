@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Seite nicht gefunden | Learn German</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .error-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .error-code {
+            font-size: 120px;
+            font-weight: 700;
+            color: #1a1a1a;
+            line-height: 1;
+            margin-bottom: 20px;
+            letter-spacing: -4px;
+        }
+
+        .error-message {
+            font-size: 24px;
+            color: #ffffff;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .error-german {
+            font-size: 18px;
+            color: #fbbf24;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .error-description {
+            font-size: 16px;
+            color: #888888;
+            max-width: 440px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .back-home {
+            display: inline-block;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 14px 28px;
+            border: 1px solid #333333;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .back-home:hover {
+            border-color: #fbbf24;
+            background: rgba(251, 191, 36, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .error-code { font-size: 80px; }
+            .error-message { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <nav aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="/" class="logo">Learn German</a>
+            <div class="nav-links" role="list">
+                <a href="/" role="listitem">Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main-content" class="error-page" role="main">
+        <h1 class="error-code" aria-hidden="true">404</h1>
+        <h2 class="error-message">Page not found</h2>
+        <p class="error-german">Seite nicht gefunden</p>
+        <p class="error-description">The page you're looking for doesn't exist. But hey — you just learned a German phrase!</p>
+        <a href="/" class="back-home" aria-label="Return to the homepage">Zurück zur Startseite ← Back to Home</a>
+    </main>
+</body>
+</html>

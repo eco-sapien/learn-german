@@ -359,6 +359,14 @@ nav {
   margin-bottom: 12px;
 }
 
+.flashcard-pron {
+  font-size: 16px;
+  color: #888;
+  font-style: italic;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
 .flashcard-hint {
   font-size: 14px;
   color: #555;

@@ -183,10 +183,12 @@
         ${card.isReview ? '<span class="review-tag">Review</span>' : '<span class="new-tag">New</span>'}
         <div class="flashcard-front">
           <div class="flashcard-word">${card.de}</div>
+          <div class="flashcard-pron">${card.pron || ''}</div>
           <div class="flashcard-hint">Tap or press Space to reveal</div>
         </div>
         <div class="flashcard-back">
           <div class="flashcard-word">${card.de}</div>
+          <div class="flashcard-pron">${card.pron || ''}</div>
           <div class="flashcard-divider"></div>
           <div class="flashcard-translation">${card.en}</div>
           <div class="flashcard-example">${card.example}</div>

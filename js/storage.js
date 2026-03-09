@@ -22,7 +22,7 @@ function loadProgress() {
     const data = JSON.parse(raw);
     if (data.version !== STORAGE_VERSION) return getDefaultProgress();
     return data;
-  } catch {
+  } catch (e) {
     return getDefaultProgress();
   }
 }
@@ -30,7 +30,7 @@ function loadProgress() {
 function saveProgress(progress) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
-  } catch {
+  } catch (e) {
     // Storage full or unavailable
   }
 }
